@@ -20,7 +20,6 @@
       <mt-field label="开场白" placeholder="开场白" type="textarea" rows="4" v-model="char_data.greeting" class="chat_text"></mt-field>
       <mt-field label="角色性格" placeholder="角色的性格" type="textarea" rows="6" v-model="char_data.bot_persona" class="chat_text"></mt-field>
       <mt-field label="示例对话" placeholder="请输入示例对话" type="textarea" rows="16" v-model="char_data.example_message" class="chat_text"></mt-field>
-      <mt-field label="角色文件名" placeholder="角色文件名（留空以使用角色名）" v-model="char_data.bot_save_name" class="chat_text"></mt-field>
       <mt-button class="save_btn" @click="save_char" type="primary">保存角色</mt-button>
     </div>
   </div>
@@ -37,7 +36,6 @@ export default {
       char_name: this.$route.query.char_name,
       avatar: defaultImage,
       char_data: {
-        bot_save_name: '',
         bot: '',
         user: '',
         action_start: '',
@@ -59,7 +57,6 @@ export default {
     getCharDetail() {
       getCharacterDetail(localStorage.getItem('user_name'), this.char_name).then((res) => {
         this.char_data = res.data;
-        this.char_data.bot_save_name = ''
         if(res.data.avatar) {
           this.avatar = res.data.avatar
         } else {
@@ -68,9 +65,9 @@ export default {
       })
     },
     save_char() {
-      saveCharacter(localStorage.getItem('user_name'), this.char_data.bot_save_name, this.char_data.bot, 
-        this.char_data.user, this.char_data.action_start, this.char_data.action_end, this.char_data.greeting, 
-        this.char_data.bot_persona, this.char_data.example_message, this.char_data.use_qa, this.char_data.avatar
+      saveCharacter(localStorage.getItem('user_name'), this.char_data.bot, this.char_data.user, 
+        this.char_data.action_start, this.char_data.action_end, this.char_data.greeting, this.char_data.bot_persona, 
+        this.char_data.example_message, this.char_data.use_qa, this.char_data.avatar
       ).then(() => {
         this.$router.push({path: '/'})
       })

@@ -24,8 +24,8 @@
       <mt-field @keyup.native.enter="replyChat" placeholder="请输入对话" v-model="talk_text" class="reply_text"></mt-field>
       <div class="btn_area">
         <mt-button @click="resayChat" type="primary" class="function_btn">重新生成</mt-button>
-        <mt-button type="primary" class="function_btn">清除上一条</mt-button>
-        <mt-button type="primary" class="function_btn">替角色说</mt-button>
+        <mt-button @click="back_visible=true" type="primary" class="function_btn">回溯对话</mt-button>
+        <mt-button @click="tamperChat" type="primary" class="function_btn">替角色说</mt-button>
       </div>
     </div>
     <mt-actionsheet :actions="actions" v-model="action_visible"></mt-actionsheet>
@@ -40,12 +40,35 @@
         <mt-button class="save_setting" @click="saveChatSetting" type="primary">保存设定</mt-button>
       </div>
     </mt-popup>
+    <mt-popup class="debug_page" v-model="debug_visible" position="right" :modal="false">
+      <div class="debug_area">
+        <div v-html="debug_token"></div>
+        <mt-button class="save_setting" @click="debug_visible=false" type="primary">关闭</mt-button>
+      </div>
+    </mt-popup>
+    <mt-popup class="back_page" v-model="back_visible" position="right" :modal="false">
+      <div class="chat_area" style="height: 90%; margin-top:0">
+        <label v-for="(item, k) in chat_log_show" :key="k" :class="'message ' + (item.type == 1 ? 'message_c' : 'message_m')">
+          <input v-model="back_checked" style="width: 20px;margin-right: 8px;" type="radio" name="check" :value="((chat_log_show.length - k - 1) / 2)" v-if="item.type==1">
+          <div v-if="item.type==1" class="circle-bot">
+            <img :src="avatar">
+          </div>
+          <div :class="item.type == 1 ? 'text_c' : 'text_m'">
+            <div :class="'username ' + (item.type == 1 ? '' : 'username-m')">
+              {{item.name}}
+            </div>
+            <div v-html="item.text" :class="'message-body ' + (item.type == 1 ? 'message-body-c' : 'message-body-m')"></div>
+          </div>
+        </label>
+      </div>
+      <mt-button class="back_btn" @click="backChat" type="primary">确定</mt-button>
+    </mt-popup>
   </div>
 </template>
 <script>
 import { MessageBox } from 'mint-ui';
 import { getCharacterDetail } from '@/api/char'
-import { loadCharacters, resetChat, reply, resay } from '@/api/chat'
+import { loadCharacters, resetChat, reply, resay, debug, tamper, back } from '@/api/chat'
 import defaultImage from '@/assets/default.png';
 export default {
   name: 'Home',
@@ -75,15 +98,18 @@ export default {
         },
         {
           name: '调试',
-          method: this.debug
+          method: this.debugChat
         }
       ],
       action_visible: false,
-      setting_visible: false
+      setting_visible: false,
+      debug_token: '',
+      debug_visible: false,
+      back_visible: false,
+      back_checked: ''
     }
   },
   mounted() {
-    console.log(window.screen.height)
     this.init_chat()
   },
   methods: {
@@ -159,10 +185,17 @@ export default {
         }
       }).catch(() =>{})
     },
-    debug() {
-      console.log(22)
+    debugChat() {
+      this.debug_token = ''
+      this.debug_visible = true
+      debug(localStorage.getItem('user_name'), this.char_name).then((res) => {
+        this.debug_token = '总共' + res.data.token_count + '个token<br><br>' + res.data.token_state.replaceAll('\n', '<br>')
+      })
     },
     replyChat() {
+      if(!this.action_text && !this.talk_text) {
+        return
+      }
       let prompt = ''
       if(this.action_text) {
         prompt += this.char_data.action_start + this.action_text + this.char_data.action_end;
@@ -201,6 +234,40 @@ export default {
         this.chat_log[this.chat_log.length - 1] = tmp
         this.setChatLog()
       })
+    },
+    tamperChat() {
+      if(!this.action_text && !this.talk_text) {
+        return
+      }
+      let message = ''
+      if(this.action_text) {
+        message += this.char_data.action_start + this.action_text + this.char_data.action_end;
+      }
+      message += this.talk_text
+      const tmp = {
+        type: 1,
+        text: this.formatText(message),
+        name: this.char_data['bot']
+      }
+      this.talk_text = ''
+      this.action_text = ''
+      tamper(localStorage.getItem('user_name'), this.char_name, message).then(() => {
+        this.chat_log[this.chat_log.length - 1] = tmp
+        this.setChatLog()
+      })
+    },
+    backChat() {
+      if(this.back_checked === '' || (this.back_checked * 2 + 1) == this.chat_log.length) {
+        this.back_visible = false
+        this.back_checked = ''
+        return
+      }
+      back(localStorage.getItem('user_name'), this.char_name, this.back_checked).then(() => {
+        this.chat_log = this.chat_log.splice(0, this.back_checked + 1)
+        this.setChatLog()
+        this.back_visible = false
+        this.back_checked = ''
+      })
     }
   }
 }
@@ -219,6 +286,32 @@ export default {
 .save_setting {
   margin-top: 16px;
   width: 100%;
+}
+.debug_page {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+.debug_area {
+  width: 80%;
+  height: 100%;
+  margin: auto;
+  margin-top: 16px;
+}
+.debug_area div {
+  height: 80%;
+  padding: 16px;
+  overflow-y: scroll;
+  border: 1px dashed #999
+}
+.back_page {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+.back_btn {
+  width: 80%;
+  margin-left: 10%;
 }
 .chat_area {
   margin-top: 40px;

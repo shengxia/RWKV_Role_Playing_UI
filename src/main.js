@@ -3,6 +3,7 @@ import App from './App.vue'
 import router from './router'
 import Mint from 'mint-ui';
 import 'mint-ui/lib/style.css'
+import './assets/css/style.css'
 import './permission'
 
 Vue.config.productionTip = false
