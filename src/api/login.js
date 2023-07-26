@@ -10,3 +10,11 @@ export function login(user_name, password) {
     }
   })
 }
+
+export function loginTmp() {
+  return request({
+    url: '/login/tmp',
+    method: 'post',
+    data: {}
+  })
+}
