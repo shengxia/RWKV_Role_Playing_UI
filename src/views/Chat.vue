@@ -20,9 +20,11 @@
         </div>
     </div>
     <div class="function_area">
-      <mt-field @keyup.native.enter="replyChat" placeholder="请输入旁白" v-model="action_text" class="reply_text"></mt-field>
-      <mt-field @keyup.native.enter="replyChat" placeholder="请输入对话" v-model="talk_text" class="reply_text"></mt-field>
+      <div>
+        <textarea ref="talk_input" @keyup.enter="replyChat" rows="3" placeholder="请输入对话" v-model="talk_text" class="reply_text"></textarea>
+      </div>
       <div class="btn_area">
+        <mt-button @click="insertAction" type="primary" class="function_btn">插入动作</mt-button>
         <mt-button @click="resayChat" type="primary" class="function_btn">重新生成</mt-button>
         <mt-button @click="back_visible=true" type="primary" class="function_btn">回溯对话</mt-button>
         <mt-button @click="tamperChat" type="primary" class="function_btn">替角色说</mt-button>
@@ -32,7 +34,7 @@
     <mt-popup class="setting_page" v-model="setting_visible" position="right" :modal="false">
       <div class="setting_form">
         <h3 style="text-align:center; margin-bottom: 16px;">对话设置</h3>
-        <mt-field label="最小回复长度（0为不控制）" v-model="min_len"></mt-field>
+        <mt-field label="最小回复长度（0为不控制）" v-model="max_len"></mt-field>
         <mt-field label="top_p" v-model="top_p"></mt-field>
         <mt-field label="temperature" v-model="temperature"></mt-field>
         <mt-field label="presence penalty" v-model="presence_penalty"></mt-field>
@@ -75,14 +77,13 @@ export default {
   data() {
     return {
       avatar: defaultImage,
-      chat_area_height: window.screen.height - 170 - 56,
+      chat_area_height: window.screen.height - 137 - 56,
       char_name: this.$route.query.char_name,
       char_data: {},
       chat_log: [],
       chat_log_show: [],
-      action_text: '',
       talk_text: '',
-      min_len: 0,
+      max_len: 0,
       top_p: localStorage.getItem('top_p') ? localStorage.getItem('top_p') : 0.65,
       temperature: localStorage.getItem('temperature') ? localStorage.getItem('temperature') : 2,
       presence_penalty: localStorage.getItem('presence_penalty') ? localStorage.getItem('presence_penalty') : 0.2,
@@ -139,8 +140,8 @@ export default {
       }
     },
     formatText(text) {
-      const start = this.char_data.action_start
-      const end = this.char_data.action_end
+      const start = '（'
+      const end = '）'
       let result = text.replaceAll(start, '<p>')
       result = result.replaceAll(end, '</p>')
       return result
@@ -153,10 +154,10 @@ export default {
       this.setting_visible = true
     },
     saveChatSetting() {
-      if(isNaN(parseInt(this.min_len)) || this.min_len < 0 || this.min_len > 500) {
-        this.min_len = 0
+      if(isNaN(parseInt(this.max_len)) || this.max_len < 0 || this.max_len > 500) {
+        this.max_len = 0
       }
-      localStorage.setItem('min_len', this.min_len)
+      localStorage.setItem('max_len', this.max_len)
       if(isNaN(parseFloat(this.top_p)) || this.top_p <= 0 || this.top_p >= 1) {
         this.top_p = 0.65
       }
@@ -193,14 +194,10 @@ export default {
       })
     },
     replyChat() {
-      if(!this.action_text && !this.talk_text) {
+      if(!this.talk_text) {
         return
       }
-      let prompt = ''
-      if(this.action_text) {
-        prompt += this.char_data.action_start + this.action_text + this.char_data.action_end;
-      }
-      prompt += this.talk_text
+      let prompt = this.talk_text
       const tmp = {
         type: 0,
         text: this.formatText(prompt),
@@ -209,8 +206,7 @@ export default {
       this.chat_log.push(tmp)
       this.setChatLog()
       this.talk_text = ''
-      this.action_text = ''
-      reply(localStorage.getItem('user_name'), this.char_name, prompt, this.min_len, this.top_p, this.temperature,
+      reply(localStorage.getItem('user_name'), this.char_name, prompt, this.max_len, this.top_p, this.temperature,
       this.presence_penalty, this.frequency_penalty).then((res) => {
         const reply_text = res.data.reply
         const tmp = {
@@ -223,7 +219,7 @@ export default {
       })
     },
     resayChat() {
-      resay(localStorage.getItem('user_name'), this.char_name, this.min_len, this.top_p, this.temperature,
+      resay(localStorage.getItem('user_name'), this.char_name, this.max_len, this.top_p, this.temperature,
       this.presence_penalty, this.frequency_penalty).then((res) => {
         const reply_text = res.data.reply
         const tmp = {
@@ -236,21 +232,16 @@ export default {
       })
     },
     tamperChat() {
-      if(!this.action_text && !this.talk_text) {
+      if(!this.talk_text) {
         return
       }
-      let message = ''
-      if(this.action_text) {
-        message += this.char_data.action_start + this.action_text + this.char_data.action_end;
-      }
-      message += this.talk_text
+      let message = this.talk_text
       const tmp = {
         type: 1,
         text: this.formatText(message),
         name: this.char_data['bot']
       }
       this.talk_text = ''
-      this.action_text = ''
       tamper(localStorage.getItem('user_name'), this.char_name, message).then(() => {
         this.chat_log[this.chat_log.length - 1] = tmp
         this.setChatLog()
@@ -263,13 +254,30 @@ export default {
         return
       }
       back(localStorage.getItem('user_name'), this.char_name, this.back_checked).then(() => {
-        this.chat_log = this.chat_log.splice(0, this.back_checked + 1)
+        let end_index = 2
+        if(this.back_checked == 0) {
+          end_index = 1
+        }
+        this.chat_log = this.chat_log.splice(0, (this.back_checked + end_index))
         this.setChatLog()
         this.back_visible = false
         this.back_checked = ''
       })
+    },
+    insertAction() {
+      const talk_input = this.$refs.talk_input
+      if (talk_input) {
+        if (talk_input.value.length == 0) {
+          talk_input.value += "（）"
+        } else{
+          talk_input.value += "\n（）"
+        }
+        talk_input.selectionStart = talk_input.value.length - 1
+        talk_input.selectionEnd = talk_input.value.length - 1
+        talk_input.focus()
+      }
     }
-  }
+  } 
 }
 </script>
 <style>
@@ -391,11 +399,15 @@ export default {
   justify-content: space-between;
 }
 .function_btn {
-  width: 30%;
+  width: 24%;
   font-size: 14px;
 }
 .reply_text {
-  border-bottom: 1px solid #eee;
+  width: calc(100% - 12px);
+  border: none;
+  border-bottom: 1px solid #ddd;
+  outline: none;
+  padding: 6px;
 }
 .chat_area {
   overflow-y: scroll;

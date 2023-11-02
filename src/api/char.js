@@ -21,8 +21,7 @@ export function getCharacterDetail(user_name, character_name) {
   })
 }
 
-export function saveCharacter(user_name, bot, user, action_start, action_end, greeting, bot_persona, 
-  example_message, use_qa, avatar) {
+export function saveCharacter(user_name, bot, user, greeting, bot_persona, example_message, use_qa, avatar) {
   return request({
     url: '/characters/save',
     method: 'post',
@@ -30,8 +29,6 @@ export function saveCharacter(user_name, bot, user, action_start, action_end, gr
       user_name: user_name,
       bot: bot,
       user: user,
-      action_start: action_start,
-      action_end: action_end,
       greeting: greeting,
       bot_persona: bot_persona,
       example_message: example_message,

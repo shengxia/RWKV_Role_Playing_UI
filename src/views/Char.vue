@@ -15,8 +15,6 @@
       <mt-cell class="chat_text" title="用User和Assistant代替你和角色的名字">
         <mt-switch v-model="char_data.use_qa"></mt-switch>
       </mt-cell>
-      <mt-field label="旁白开始符" placeholder="旁白开始的符号" v-model="char_data.action_start" class="chat_text"></mt-field>
-      <mt-field label="旁白结束符" placeholder="旁白结束的符号" v-model="char_data.action_end" class="chat_text"></mt-field>
       <mt-field label="开场白" placeholder="开场白" type="textarea" rows="4" v-model="char_data.greeting" class="chat_text"></mt-field>
       <mt-field label="角色性格" placeholder="角色的性格" type="textarea" rows="6" v-model="char_data.bot_persona" class="chat_text"></mt-field>
       <mt-field label="示例对话" placeholder="请输入示例对话" type="textarea" rows="16" v-model="char_data.example_message" class="chat_text"></mt-field>
@@ -38,8 +36,6 @@ export default {
       char_data: {
         bot: '',
         user: '',
-        action_start: '',
-        action_end: '',
         greeting: '',
         bot_persona: '',
         example_message: '',
@@ -66,8 +62,8 @@ export default {
     },
     save_char() {
       saveCharacter(localStorage.getItem('user_name'), this.char_data.bot, this.char_data.user, 
-        this.char_data.action_start, this.char_data.action_end, this.char_data.greeting, this.char_data.bot_persona, 
-        this.char_data.example_message, this.char_data.use_qa, this.char_data.avatar
+        this.char_data.greeting, this.char_data.bot_persona, this.char_data.example_message, 
+        this.char_data.use_qa, this.char_data.avatar
       ).then(() => {
         this.$router.push({path: '/'})
       })

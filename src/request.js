@@ -3,7 +3,7 @@ import { Toast } from 'mint-ui';
 import { Indicator } from 'mint-ui';
 
 const service = axios.create({
-  timeout: 30000
+  timeout: 300000
 })
 
 service.interceptors.request.use(
