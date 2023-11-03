@@ -22,39 +22,6 @@ export function resetChat(user_name, character_name) {
   })
 }
 
-export function reply(user_name, character_name, prompt, max_len, top_p, temperature, presence_penalty, frequency_penalty) {
-  return request({
-    url: '/chat/reply',
-    method: 'post',
-    data: {
-      user_name: user_name,
-      character_name: character_name,
-      prompt: prompt,
-      max_len: max_len,
-      top_p: top_p,
-      temperature: temperature,
-      presence_penalty: presence_penalty,
-      frequency_penalty: frequency_penalty
-    }
-  })
-}
-
-export function resay(user_name, character_name, max_len, top_p, temperature, presence_penalty, frequency_penalty) {
-  return request({
-    url: '/chat/resay',
-    method: 'post',
-    data: {
-      user_name: user_name,
-      character_name: character_name,
-      max_len: max_len,
-      top_p: top_p,
-      temperature: temperature,
-      presence_penalty: presence_penalty,
-      frequency_penalty: frequency_penalty
-    }
-  })
-}
-
 export function debug(user_name, character_name) {
   return request({
     url: '/debug/token',

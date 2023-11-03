@@ -27,7 +27,8 @@
         <mt-button @click="insertAction" type="primary" class="function_btn">插入动作</mt-button>
         <mt-button @click="resayChat" type="primary" class="function_btn">重新生成</mt-button>
         <mt-button @click="back_visible=true" type="primary" class="function_btn">回溯对话</mt-button>
-        <mt-button @click="tamperChat" type="primary" class="function_btn">替角色说</mt-button>
+        <!-- <mt-button @click="tamperChat" type="primary" class="function_btn">替角色说</mt-button> -->
+        <mt-button @click="getChatbot" type="primary" class="function_btn">替角色说</mt-button>
       </div>
     </div>
     <mt-actionsheet :actions="actions" v-model="action_visible"></mt-actionsheet>
@@ -70,8 +71,10 @@
 <script>
 import { MessageBox } from 'mint-ui';
 import { getCharacterDetail } from '@/api/char'
-import { loadCharacters, resetChat, reply, resay, debug, tamper, back } from '@/api/chat'
+import { loadCharacters, resetChat, debug, tamper, back } from '@/api/chat'
 import defaultImage from '@/assets/default.png';
+import sse from '@/sse'
+import { Indicator } from 'mint-ui';
 export default {
   name: 'Home',
   data() {
@@ -150,6 +153,9 @@ export default {
       this.chat_log_show = JSON.parse(JSON.stringify(this.chat_log))
       this.chat_log_show.reverse()
     },
+    getChatbot() {
+      console.log(this.chat_log)
+    },
     chatSetting() {
       this.setting_visible = true
     },
@@ -206,30 +212,57 @@ export default {
       this.chat_log.push(tmp)
       this.setChatLog()
       this.talk_text = ''
-      reply(localStorage.getItem('user_name'), this.char_name, prompt, this.max_len, this.top_p, this.temperature,
-      this.presence_penalty, this.frequency_penalty).then((res) => {
-        const reply_text = res.data.reply
-        const tmp = {
-          type: 1,
-          text: this.formatText(reply_text),
-          name: this.char_data['bot']
+      const tmp2 = {
+        type: 1,
+        text: '',
+        name: this.char_data['bot']
+      }
+      this.chat_log.push(tmp2)
+      sse({
+        url: '/chat/reply',
+        method: 'post',
+        data: {
+          user_name: localStorage.getItem('user_name'),
+          character_name: this.char_name,
+          prompt: prompt,
+          max_len: this.max_len,
+          top_p: this.top_p,
+          temperature: this.temperature,
+          presence_penalty: this.presence_penalty,
+          frequency_penalty: this.frequency_penalty
+        },
+        onDownloadProgress: progressEvent => {
+          Indicator.close();
+          const xhr = progressEvent.event.target
+          const { responseText } = xhr
+          const res = responseText.split("\n\ndata:")
+          this.chat_log[this.chat_log.length - 1].text = this.formatText(res[res.length-1])
+          this.setChatLog()
         }
-        this.chat_log.push(tmp)
-        this.setChatLog()
-      })
+      }).then(({ data }) => Promise.resolve(data));
     },
     resayChat() {
-      resay(localStorage.getItem('user_name'), this.char_name, this.max_len, this.top_p, this.temperature,
-      this.presence_penalty, this.frequency_penalty).then((res) => {
-        const reply_text = res.data.reply
-        const tmp = {
-          type: 1,
-          text: this.formatText(reply_text),
-          name: this.char_data['bot']
+      sse({
+        url: '/chat/resay',
+        method: 'post',
+        data: {
+          user_name: localStorage.getItem('user_name'),
+          character_name: this.char_name,
+          max_len: this.max_len,
+          top_p: this.top_p,
+          temperature: this.temperature,
+          presence_penalty: this.presence_penalty,
+          frequency_penalty: this.frequency_penalty
+        },
+        onDownloadProgress: progressEvent => {
+          Indicator.close();
+          const xhr = progressEvent.event.target
+          const { responseText } = xhr
+          const res = responseText.split("\n\ndata:")
+          this.chat_log[this.chat_log.length - 1].text = this.formatText(res[res.length-1])
+          this.setChatLog()
         }
-        this.chat_log[this.chat_log.length - 1] = tmp
-        this.setChatLog()
-      })
+      }).then(({ data }) => Promise.resolve(data));
     },
     tamperChat() {
       if(!this.talk_text) {
@@ -254,11 +287,7 @@ export default {
         return
       }
       back(localStorage.getItem('user_name'), this.char_name, this.back_checked).then(() => {
-        let end_index = 2
-        if(this.back_checked == 0) {
-          end_index = 1
-        }
-        this.chat_log = this.chat_log.splice(0, (this.back_checked + end_index))
+        this.chat_log = this.chat_log.splice(0, this.back_checked * 2 + 1)
         this.setChatLog()
         this.back_visible = false
         this.back_checked = ''
