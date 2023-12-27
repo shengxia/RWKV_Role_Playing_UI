@@ -35,11 +35,10 @@
     <mt-popup class="setting_page" v-model="setting_visible" position="right" :modal="false">
       <div class="setting_form">
         <h3 style="text-align:center; margin-bottom: 16px;">对话设置</h3>
-        <mt-field label="最小回复长度（0为不控制）" v-model="max_len"></mt-field>
         <mt-field label="top_p" v-model="top_p"></mt-field>
+        <mt-field label="top_k" v-model="top_k"></mt-field>
         <mt-field label="temperature" v-model="temperature"></mt-field>
-        <mt-field label="presence penalty" v-model="presence_penalty"></mt-field>
-        <mt-field label="frequency penalty" v-model="frequency_penalty"></mt-field>
+        <mt-field label="重复惩罚" v-model="presence_penalty"></mt-field>
         <mt-button class="save_setting" @click="saveChatSetting" type="primary">保存设定</mt-button>
       </div>
     </mt-popup>
@@ -86,11 +85,10 @@ export default {
       chat_log: [],
       chat_log_show: [],
       talk_text: '',
-      max_len: 0,
       top_p: localStorage.getItem('top_p') ? localStorage.getItem('top_p') : 0.65,
+      top_k: localStorage.getItem('top_k') ? localStorage.getItem('top_k') : 0,
       temperature: localStorage.getItem('temperature') ? localStorage.getItem('temperature') : 2,
       presence_penalty: localStorage.getItem('presence_penalty') ? localStorage.getItem('presence_penalty') : 0.2,
-      frequency_penalty: localStorage.getItem('frequency_penalty') ? localStorage.getItem('frequency_penalty') : 0.2,
       actions: [
         {
           name: '对话设置',
@@ -160,14 +158,14 @@ export default {
       this.setting_visible = true
     },
     saveChatSetting() {
-      if(isNaN(parseInt(this.max_len)) || this.max_len < 0 || this.max_len > 500) {
-        this.max_len = 0
-      }
-      localStorage.setItem('max_len', this.max_len)
       if(isNaN(parseFloat(this.top_p)) || this.top_p <= 0 || this.top_p >= 1) {
         this.top_p = 0.65
       }
       localStorage.setItem('top_p', this.top_p)
+      if(isNaN(parseFloat(this.top_k)) || this.top_k <= 0) {
+        this.top_k = 0
+      }
+      localStorage.setItem('top_k', this.top_k)
       if(isNaN(parseFloat(this.temperature)) || this.temperature < 0 || this.temperature > 5) {
         this.temperature = 2
       }
@@ -176,10 +174,6 @@ export default {
         this.presence_penalty = 0.2
       }
       localStorage.setItem('presence_penalty', this.presence_penalty)
-      if(isNaN(parseFloat(this.frequency_penalty)) || this.frequency_penalty < 0 || this.frequency_penalty > 1) {
-        this.frequency_penalty = 0.2
-      }
-      localStorage.setItem('frequency_penalty', this.frequency_penalty)
       this.setting_visible = false
     },
     resetChat() {
@@ -225,11 +219,10 @@ export default {
           user_name: localStorage.getItem('user_name'),
           character_name: this.char_name,
           prompt: prompt,
-          max_len: this.max_len,
           top_p: this.top_p,
+          top_k: this.top_k,
           temperature: this.temperature,
-          presence_penalty: this.presence_penalty,
-          frequency_penalty: this.frequency_penalty
+          presence_penalty: this.presence_penalty
         },
         onDownloadProgress: progressEvent => {
           Indicator.close();
@@ -248,11 +241,10 @@ export default {
         data: {
           user_name: localStorage.getItem('user_name'),
           character_name: this.char_name,
-          max_len: this.max_len,
           top_p: this.top_p,
+          top_k: this.top_k,
           temperature: this.temperature,
-          presence_penalty: this.presence_penalty,
-          frequency_penalty: this.frequency_penalty
+          presence_penalty: this.presence_penalty
         },
         onDownloadProgress: progressEvent => {
           Indicator.close();
