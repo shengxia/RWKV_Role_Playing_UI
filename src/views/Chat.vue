@@ -35,9 +35,10 @@
     <mt-popup class="setting_page" v-model="setting_visible" position="right" :modal="false">
       <div class="setting_form">
         <h3 style="text-align:center; margin-bottom: 16px;">对话设置</h3>
-        <mt-field label="top_p" v-model="top_p"></mt-field>
-        <mt-field label="top_k" v-model="top_k"></mt-field>
-        <mt-field label="temperature" v-model="temperature"></mt-field>
+        <mt-field label="TAU" v-model="tau"></mt-field>
+        <mt-field label="Learning Rate" v-model="rate"></mt-field>
+        <mt-field label="Min_P" v-model="min_p"></mt-field>
+        <mt-field label="Temperature" v-model="temperature"></mt-field>
         <mt-field label="重复惩罚" v-model="presence_penalty"></mt-field>
         <mt-button class="save_setting" @click="saveChatSetting" type="primary">保存设定</mt-button>
       </div>
@@ -85,8 +86,9 @@ export default {
       chat_log: [],
       chat_log_show: [],
       talk_text: '',
-      top_p: localStorage.getItem('top_p') ? localStorage.getItem('top_p') : 0.65,
-      top_k: localStorage.getItem('top_k') ? localStorage.getItem('top_k') : 0,
+      tau: localStorage.getItem('tau') ? localStorage.getItem('tau') : 3,
+      rate: localStorage.getItem('rate') ? localStorage.getItem('rate') : 0.1,
+      min_p: localStorage.getItem('min_p') ? localStorage.getItem('min_p') : 0.05,
       temperature: localStorage.getItem('temperature') ? localStorage.getItem('temperature') : 2,
       presence_penalty: localStorage.getItem('presence_penalty') ? localStorage.getItem('presence_penalty') : 0.2,
       actions: [
@@ -158,16 +160,20 @@ export default {
       this.setting_visible = true
     },
     saveChatSetting() {
-      if(isNaN(parseFloat(this.top_p)) || this.top_p <= 0 || this.top_p >= 1) {
-        this.top_p = 0.65
+      if(isNaN(parseFloat(this.tau)) || this.tau <= 0 || this.top_p >= 10) {
+        this.tau = 3
       }
-      localStorage.setItem('top_p', this.top_p)
-      if(isNaN(parseFloat(this.top_k)) || this.top_k <= 0) {
-        this.top_k = 0
+      localStorage.setItem('tau', this.tau)
+      if(isNaN(parseFloat(this.rate)) || this.rate <= 0 || this.rate >= 1) {
+        this.rate = 0.1
+      }
+      localStorage.setItem('rate', this.rate)
+      if(isNaN(parseFloat(this.min_p)) || this.min_p <= 0 || this.min_p >= 1) {
+        this.top_k = 0.05
       }
       localStorage.setItem('top_k', this.top_k)
       if(isNaN(parseFloat(this.temperature)) || this.temperature < 0 || this.temperature > 5) {
-        this.temperature = 2
+        this.temperature = 1.2
       }
       localStorage.setItem('temperature', this.temperature)
       if(isNaN(parseFloat(this.presence_penalty)) || this.presence_penalty < 0 || this.presence_penalty > 1) {
@@ -219,8 +225,9 @@ export default {
           user_name: localStorage.getItem('user_name'),
           character_name: this.char_name,
           prompt: prompt,
-          top_p: this.top_p,
-          top_k: this.top_k,
+          tau: this.tau,
+          rate: this.rate,
+          min_p: this.min_p,
           temperature: this.temperature,
           presence_penalty: this.presence_penalty
         },
@@ -241,8 +248,9 @@ export default {
         data: {
           user_name: localStorage.getItem('user_name'),
           character_name: this.char_name,
-          top_p: this.top_p,
-          top_k: this.top_k,
+          tau: this.tau,
+          rate: this.rate,
+          min_p: this.min_p,
           temperature: this.temperature,
           presence_penalty: this.presence_penalty
         },
